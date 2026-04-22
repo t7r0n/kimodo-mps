@@ -12,6 +12,12 @@
 > source-only: checkpoints, generated outputs, local envs, caches, and secrets
 > are intentionally not committed.
 
+Apple Silicon MPS status: a full local text prompt smoke test has passed with
+the official local LLM2Vec/Llama-3 text encoder path, producing both `.npz` and
+`.bvh` output. See [MPS_PORT_NOTES.md](MPS_PORT_NOTES.md) and run
+`scripts/mps_e2e_smoke.sh` after installing dependencies and authenticating with
+Hugging Face.
+
 ## Overview
 
 Kimodo is a **ki**nematic **mo**tion **d**iffusi**o**n model trained on a large-scale (700 hours) commercially-friendly optical motion capture dataset. The model generates high-quality 3D human and robot motions, and is controlled through text prompts and an extensive set of constraints such as full-body pose keyframes, end-effector positions/rotations, 2D paths, and 2D waypoints. Full details of the model architecture and training are available in the [technical report](https://research.nvidia.com/labs/sil/projects/kimodo/assets/kimodo_tech_report.pdf).

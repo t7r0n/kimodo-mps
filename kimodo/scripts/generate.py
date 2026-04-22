@@ -393,15 +393,20 @@ def main():
             from kimodo.exports.bvh import save_motion_bvh
             from kimodo.skeleton import SOMASkeleton30, global_rots_to_local_rots
 
+            # BVH writing is CPU serialization work. Keep it on CPU for MPS runs
+            # because SOMA skeleton assets can contain float64 buffers, which MPS
+            # cannot represent.
+            bvh_device = torch.device("cpu") if torch.device(device).type == "mps" else torch.device(device)
+
             if isinstance(skeleton, SOMASkeleton30):
                 # Motion has already been converted to somaskel77 within the model for output
-                skeleton = skeleton.somaskel77.to(device)
+                skeleton = skeleton.somaskel77.to(bvh_device)
 
             if n_samples == 1:
                 bvh_path = _single_file_path(output_base, ".bvh")
                 print(f"Saving the BVH output to {bvh_path}")
-                joints_pos = torch.from_numpy(output["posed_joints"][0]).to(device)
-                joints_rot = torch.from_numpy(output["global_rot_mats"][0]).to(device)
+                joints_pos = torch.from_numpy(output["posed_joints"][0]).to(device=bvh_device, dtype=torch.float32)
+                joints_rot = torch.from_numpy(output["global_rot_mats"][0]).to(device=bvh_device, dtype=torch.float32)
                 local_rot_mats = global_rots_to_local_rots(joints_rot, skeleton)
                 root_positions = joints_pos[:, skeleton.root_idx, :]
                 save_motion_bvh(
@@ -416,8 +421,8 @@ def main():
                 out_dir, _, base_name = _output_dir_and_path(output_base, "motion", ".bvh")
                 print(f"Saving the BVH output to {out_dir}/ ({base_name}_00.bvh ...)")
                 for i in range(n_samples):
-                    joints_pos = torch.from_numpy(output["posed_joints"][i]).to(device)
-                    joints_rot = torch.from_numpy(output["global_rot_mats"][i]).to(device)
+                    joints_pos = torch.from_numpy(output["posed_joints"][i]).to(device=bvh_device, dtype=torch.float32)
+                    joints_rot = torch.from_numpy(output["global_rot_mats"][i]).to(device=bvh_device, dtype=torch.float32)
                     local_rot_mats = global_rots_to_local_rots(joints_rot, skeleton)
                     root_positions = joints_pos[:, skeleton.root_idx, :]
                     save_motion_bvh(

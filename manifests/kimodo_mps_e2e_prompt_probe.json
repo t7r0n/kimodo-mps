@@ -1,0 +1,58 @@
+{
+  "ok": true,
+  "validation_type": "full_text_prompt_to_motion",
+  "platform": "Apple Silicon macOS",
+  "device": "mps",
+  "torch_cuda_available": false,
+  "model": "kimodo-soma-rp",
+  "resolved_model": "Kimodo-SOMA-RP-v1.1",
+  "text_encoder_mode": "local",
+  "text_encoder": {
+    "base_model": "McGill-NLP/LLM2Vec-Meta-Llama-3-8B-Instruct-mntp",
+    "peft_model": "McGill-NLP/LLM2Vec-Meta-Llama-3-8B-Instruct-mntp-supervised",
+    "gated_base_dependency": "meta-llama/Meta-Llama-3-8B-Instruct",
+    "dtype": "bfloat16",
+    "device": "auto"
+  },
+  "command": "PYTHONPATH=raw/model-research/kimodo CHECKPOINT_DIR=$PWD/raw/model-research/checkpoints/kimodo LOCAL_CACHE=True TEXT_ENCODER_MODE=local PYTORCH_ENABLE_MPS_FALLBACK=1 python -m kimodo.scripts.generate \"A person walks forward.\" --model kimodo-soma-rp --duration 0.25 --num_samples 1 --diffusion_steps 1 --no-postprocess --seed 123 --bvh --output raw/model-research/kimodo/outputs/mps_e2e_smoke/walk_forward_bvh",
+  "prompt": "A person walks forward.",
+  "duration_seconds": 0.25,
+  "frames": 7,
+  "fps": 30.0,
+  "diffusion_steps": 1,
+  "num_samples": 1,
+  "seed": 123,
+  "outputs": {
+    "npz": {
+      "bytes": 47392,
+      "arrays": {
+        "foot_contacts": {"shape": [7, 6], "dtype": "bool"},
+        "global_root_heading": {"shape": [7, 2], "dtype": "float32"},
+        "global_rot_mats": {"shape": [7, 77, 3, 3], "dtype": "float32"},
+        "local_rot_mats": {"shape": [7, 77, 3, 3], "dtype": "float32"},
+        "posed_joints": {"shape": [7, 77, 3], "dtype": "float32"},
+        "root_positions": {"shape": [7, 3], "dtype": "float32"},
+        "smooth_root_pos": {"shape": [7, 3], "dtype": "float32"}
+      }
+    },
+    "bvh": {
+      "bytes": 30217,
+      "has_hierarchy": true,
+      "has_motion": true,
+      "frames": 7,
+      "frame_time": 0.03333333333333333
+    }
+  },
+  "local_cache_sizes": {
+    "meta_llama_3_8b_instruct": "15G",
+    "llm2vec_mntp": "169M",
+    "llm2vec_mntp_supervised": "160M",
+    "kimodo_soma_rp_v1_1_checkpoint": "1.1G"
+  },
+  "notes": [
+    "First successful full local text prompt to NPZ/BVH validation on MPS.",
+    "The first run downloaded and loaded the gated Llama 3 8B text encoder dependency.",
+    "Upstream LLM2Vec load warnings about unexpected/missing adapter keys appeared; Kimodo upstream docs say text encoder load warnings are expected and can be ignored.",
+    "BVH export is serialized on CPU during MPS runs to avoid MPS float64 skeleton-buffer failures."
+  ]
+}
