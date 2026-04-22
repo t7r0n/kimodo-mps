@@ -1,6 +1,6 @@
 # Kimodo MPS Port Notes
 
-This private package is a source-only Apple Silicon/MPS packaging of the locally
+This package is a source-only Apple Silicon/MPS packaging of the locally
 validated Kimodo motion-generation port. It is based on:
 
 - `nv-tlabs/kimodo` at local source commit `301d3a1`.
