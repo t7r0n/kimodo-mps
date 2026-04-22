@@ -1,0 +1,76 @@
+{
+  "ok": true,
+  "returncode": 0,
+  "checkpoint_root": "raw/model-research/checkpoints/kimodo",
+  "stdout": "CHECKPOINT_DIR is set to /Users/tarunadityakusupati/Desktop/container/remotion_2/raw/model-research/checkpoints/kimodo, checking the local cache...\n{\"resolved\": \"kimodo-soma-rp\", \"model_device\": \"mps:0\", \"model_dtype\": \"torch.float32\", \"params_million\": 283.28, \"outputs\": {\"local_rot_mats\": {\"shape\": [8, 77, 3, 3], \"device\": \"mps:0\", \"dtype\": \"torch.float32\"}, \"global_rot_mats\": {\"shape\": [8, 77, 3, 3], \"device\": \"mps:0\", \"dtype\": \"torch.float32\"}, \"posed_joints\": {\"shape\": [8, 77, 3], \"device\": \"mps:0\", \"dtype\": \"torch.float32\"}, \"root_positions\": {\"shape\": [8, 3], \"device\": \"mps:0\", \"dtype\": \"torch.float32\"}, \"smooth_root_pos\": {\"shape\": [8, 3], \"device\": \"mps:0\", \"dtype\": \"torch.float32\"}, \"foot_contacts\": {\"shape\": [8, 6], \"device\": \"mps:0\", \"dtype\": \"torch.bool\"}, \"global_root_heading\": {\"shape\": [8, 2], \"device\": \"mps:0\", \"dtype\": \"torch.float32\"}}}",
+  "stderr": "",
+  "result": {
+    "resolved": "kimodo-soma-rp",
+    "model_device": "mps:0",
+    "model_dtype": "torch.float32",
+    "params_million": 283.28,
+    "outputs": {
+      "local_rot_mats": {
+        "shape": [
+          8,
+          77,
+          3,
+          3
+        ],
+        "device": "mps:0",
+        "dtype": "torch.float32"
+      },
+      "global_rot_mats": {
+        "shape": [
+          8,
+          77,
+          3,
+          3
+        ],
+        "device": "mps:0",
+        "dtype": "torch.float32"
+      },
+      "posed_joints": {
+        "shape": [
+          8,
+          77,
+          3
+        ],
+        "device": "mps:0",
+        "dtype": "torch.float32"
+      },
+      "root_positions": {
+        "shape": [
+          8,
+          3
+        ],
+        "device": "mps:0",
+        "dtype": "torch.float32"
+      },
+      "smooth_root_pos": {
+        "shape": [
+          8,
+          3
+        ],
+        "device": "mps:0",
+        "dtype": "torch.float32"
+      },
+      "foot_contacts": {
+        "shape": [
+          8,
+          6
+        ],
+        "device": "mps:0",
+        "dtype": "torch.bool"
+      },
+      "global_root_heading": {
+        "shape": [
+          8,
+          2
+        ],
+        "device": "mps:0",
+        "dtype": "torch.float32"
+      }
+    }
+  }
+}
