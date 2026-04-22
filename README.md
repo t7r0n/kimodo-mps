@@ -1,264 +1,202 @@
-<p align="center">
-  <img src="./assets/banner.png" alt="Banner" width="100%">
-  <a href="LICENSE"><img src="https://img.shields.io/badge/License-Apache%202.0-76B900.svg" alt="License"></a>
-  <a href="https://research.nvidia.com/labs/sil/projects/kimodo/"><img src="https://img.shields.io/badge/Project-Page-blue" alt="Project Page"></a>
-  <a href="https://research.nvidia.com/labs/sil/projects/kimodo/docs/index.html"><img src="https://img.shields.io/badge/docs-online-green.svg" alt="Documentation"></a>
-</p>
+# Kimodo MPS for Apple Silicon
 
-> This private `t7r0n/kimodo-mps` package preserves the locally validated
-> Apple Silicon/MPS compatibility changes made on top of NVIDIA Kimodo. Read
-> [MPS_PORT_NOTES.md](MPS_PORT_NOTES.md) for the exact provenance, code changes,
-> validation results, known limits, and excluded heavyweight files. This repo is
-> source-only: checkpoints, generated outputs, local envs, caches, and secrets
-> are intentionally not committed.
+This repository is a Mac/Apple Silicon compatibility package for NVIDIA
+Kimodo. It keeps the upstream Kimodo source, adds MPS-focused fixes, and
+documents the exact local validation used to prove that a text prompt can
+generate motion on this Mac.
 
-Apple Silicon MPS status: a full local text prompt smoke test has passed with
-the official local LLM2Vec/Llama-3 text encoder path, producing both `.npz` and
-`.bvh` output. See [MPS_PORT_NOTES.md](MPS_PORT_NOTES.md) and run
-`scripts/mps_e2e_smoke.sh` after installing dependencies and authenticating with
-Hugging Face.
+The original NVIDIA project remains the authority for Kimodo model design,
+licenses, datasets, benchmark context, and general Linux/CUDA usage:
 
-## Overview
+- Original repo: https://github.com/nv-tlabs/kimodo
+- Project page: https://research.nvidia.com/labs/sil/projects/kimodo/
+- Upstream README preserved here: [UPSTREAM_README.md](UPSTREAM_README.md)
+- Detailed Mac port notes: [MPS_PORT_NOTES.md](MPS_PORT_NOTES.md)
 
-Kimodo is a **ki**nematic **mo**tion **d**iffusi**o**n model trained on a large-scale (700 hours) commercially-friendly optical motion capture dataset. The model generates high-quality 3D human and robot motions, and is controlled through text prompts and an extensive set of constraints such as full-body pose keyframes, end-effector positions/rotations, 2D paths, and 2D waypoints. Full details of the model architecture and training are available in the [technical report](https://research.nvidia.com/labs/sil/projects/kimodo/assets/kimodo_tech_report.pdf).
+This repo is source-only. It does not include model weights, Hugging Face
+caches, `.env` files, virtual environments, generated motions, or local secrets.
 
-This repository provides:
-- **Inference**: code and CLI to generate motions on both human and robot skeletons
-- **Interactive Demo**: easily author motions with a timeline interface of text prompts and kinematic controls
-- **Annotations**: [additional text descriptions](https://huggingface.co/datasets/nvidia/SEED-Timeline-Annotations) for the [BONES-SEED](https://huggingface.co/datasets/bones-studio/seed) dataset, including fine-grained temporal descriptions
-- **Benchmark**: [test cases](https://huggingface.co/datasets/nvidia/Kimodo-Motion-Gen-Benchmark) and evaluation code built on the [BONES-SEED](https://huggingface.co/datasets/bones-studio/seed) dataset to evaluate motion generation models based on text and constraint-following abilities
+## Current Status
 
-<div align="center">
-  <img src="assets/teaser.gif" width="1280">
-</div>
+Validated on Apple Silicon with PyTorch MPS:
 
-## News
+- Full CLI text prompt path works with the official local LLM2Vec/Llama-3 text
+  encoder.
+- Kimodo-SOMA-RP-v1.1 loads and runs on `mps:0`.
+- The smoke test generates both `.npz` and `.bvh`.
+- The BVH export MPS float64 issue is fixed in this package.
 
-See the [full changelog](CHANGELOG.md) for a detailed list of all changes.
+The validated smoke test was intentionally tiny:
 
-- **[2026-04-10]** _NEW_: Released the [Kimodo Motion Generation Benchmark](#kimodo-motion-generation-benchmark) alongside new v1.1 Kimodo-SOMA models
-- **[2026-03-19]** **Breaking:** Model inputs/outputs now use the SOMA 77-joint skeleton (`somaskel77`).
-- **[2026-03-16]** Initial open-source release of Kimodo with five model variants (SOMA, G1, SMPL-X), CLI, interactive demo, and timeline annotations for BONES-SEED.
+- Prompt: `A person walks forward.`
+- Model: `kimodo-soma-rp`, resolved as `Kimodo-SOMA-RP-v1.1`
+- Duration: `0.25` seconds
+- Frames: `7`
+- Diffusion steps: `1`
+- Output: NPZ plus BVH
 
+Validated files from the local run:
 
-## Kimodo Models
+- NPZ: 47,392 bytes
+- BVH: 30,217 bytes
+- BVH frame time: `0.03333333333333333`
+- NPZ arrays: `foot_contacts`, `global_root_heading`, `global_rot_mats`,
+  `local_rot_mats`, `posed_joints`, `root_positions`, `smooth_root_pos`
 
-Several variations of Kimodo are available trained on various skeletons and datasets. All models support text-to-motion and kinematic controls.
+Manifest: [manifests/kimodo_mps_e2e_prompt_probe.json](manifests/kimodo_mps_e2e_prompt_probe.json)
 
-> Note: models will be downloaded automatically when attempting to generate from the CLI or Interactive Demo, so there is no need to download them manually
+## What Changed for Mac/MPS
 
-| Model | Skeleton | Training Data | Release Date | Hugging Face | License |
-|:-------|:-------------|:------:|:------:|:-------------:|:-------------:|
-| **Kimodo-SOMA-RP-v1.1** | [SOMA](https://github.com/NVlabs/SOMA-X) | [Bones Rigplay 1](https://bones.studio/datasets#rp01) | April 10, 2026 | [Link](https://huggingface.co/nvidia/Kimodo-SOMA-RP-v1.1) | [NVIDIA Open Model](https://www.nvidia.com/en-us/agreements/enterprise-software/nvidia-open-model-license/) |
-| **Kimodo-SOMA-SEED-v1.1** | [SOMA](https://github.com/NVlabs/SOMA-X) | [BONES-SEED](https://huggingface.co/datasets/bones-studio/seed) | April 10, 2026  | [Link](https://huggingface.co/nvidia/Kimodo-SOMA-SEED-v1.1) | [NVIDIA Open Model](https://www.nvidia.com/en-us/agreements/enterprise-software/nvidia-open-model-license/) |
-| **Kimodo-SOMA-RP-v1** | [SOMA](https://github.com/NVlabs/SOMA-X) | [Bones Rigplay 1](https://bones.studio/datasets#rp01) | March 16, 2026 | [Link](https://huggingface.co/nvidia/Kimodo-SOMA-RP-v1) | [NVIDIA Open Model](https://www.nvidia.com/en-us/agreements/enterprise-software/nvidia-open-model-license/) |
-| **Kimodo-G1-RP-v1** | [Unitree G1](https://github.com/unitreerobotics/unitree_mujoco/tree/main/unitree_robots/g1) | [Bones Rigplay 1](https://bones.studio/datasets#rp01) | March 16, 2026  | [Link](https://huggingface.co/nvidia/Kimodo-G1-RP-v1) | [NVIDIA Open Model](https://www.nvidia.com/en-us/agreements/enterprise-software/nvidia-open-model-license/) |
-| **Kimodo-SOMA-SEED-v1** | [SOMA](https://github.com/NVlabs/SOMA-X) | [BONES-SEED](https://huggingface.co/datasets/bones-studio/seed) | March 16, 2026  | [Link](https://huggingface.co/nvidia/Kimodo-SOMA-SEED-v1) | [NVIDIA Open Model](https://www.nvidia.com/en-us/agreements/enterprise-software/nvidia-open-model-license/) |
-| **Kimodo-G1-SEED-v1** | [Unitree G1](https://github.com/unitreerobotics/unitree_mujoco/tree/main/unitree_robots/g1) | [BONES-SEED](https://huggingface.co/datasets/bones-studio/seed) | March 16, 2026  | [Link](https://huggingface.co/nvidia/Kimodo-G1-SEED-v1) | [NVIDIA Open Model](https://www.nvidia.com/en-us/agreements/enterprise-software/nvidia-open-model-license/) |
-| **Kimodo-SMPLX-RP-v1** | [SMPL-X](https://github.com/vchoutas/smplx) | [Bones Rigplay 1](https://bones.studio/datasets#rp01) | March 16, 2026  | [Link](https://huggingface.co/nvidia/Kimodo-SMPLX-RP-v1) | [NVIDIA R&D Model](https://www.nvidia.com/en-us/agreements/enterprise-software/nvidia-internal-scientific-research-and-development-model-license/) |
+- CLI, demo, benchmark, and helper entrypoints now prefer devices in this order:
+  `cuda`, then `mps`, then `cpu`.
+- The Kimodo model switches to `float32` on MPS because Apple MPS does not
+  support every CUDA-oriented half precision path used by the upstream code.
+- `LLM2VecEncoder(device="auto")` now resolves to MPS on Apple Silicon.
+- CUDA-only seed and deterministic setup calls are guarded so they do not crash
+  on a Mac with no CUDA.
+- The demo health check no longer treats MPS as CUDA.
+- Benchmark scripts use the same local device selection logic.
+- BVH export is forced to CPU during MPS runs because SOMA skeleton assets can
+  contain `float64` buffers, and MPS cannot represent `float64`.
+- Skeleton rotation conversion now creates identity matrices on the active
+  tensor device and dtype instead of always creating CPU float32 tensors.
+- Added `scripts/mps_e2e_smoke.sh` to run the Mac validation command.
+- Added validation manifests under [manifests](manifests).
 
-By default, we recommend using the models trained on the full Bones Rigplay 1 dataset (700 hours of mocap) for your motion generation needs.
-The models trained on BONES-SEED use 288 hours of [publicly available mocap data](https://huggingface.co/datasets/bones-studio/seed) so are less capable, but are useful for comparing to other models trained on BONES-SEED. To easily compare motion generation models to Kimodo, check out our [Motion Generation Benchmark](#kimodo-motion-generation-benchmark).
+## Why the BVH Export Fix Matters
 
-### Changes in v1.1
-The latest v1.1 Kimodo-SOMA models were released primarily for compatibility with our new [Motion Generation Benchmark](#kimodo-motion-generation-benchmark), but also contain minor quality improvements over v1. For details on these improvements, please see the Hugging Face pages for [Kimodo-SOMA-RP-v1.1](https://huggingface.co/nvidia/Kimodo-SOMA-RP-v1.1#changes-in-v11) and [Kimodo-SOMA-SEED-v1.1](https://huggingface.co/nvidia/Kimodo-SOMA-SEED-v1.1#changes-in-v11).
+The first full `--bvh` run generated the Kimodo motion successfully but failed
+while exporting BVH:
 
-## Getting Started
-
-Please see the full documentation for detailed installation instructions, how to use the CLI and Interactive Demo, and other practical tips for generating motions with Kimodo:
-
-**[Full Documentation](https://research.nvidia.com/labs/sil/projects/kimodo/docs)**
-- [Quick Start Guide](https://research.nvidia.com/labs/sil/projects/kimodo/docs/getting_started/quick_start.html)
-- [Installation Instructions](https://research.nvidia.com/labs/sil/projects/kimodo/docs/getting_started/installation.html)
-- [Interactive Motion Authoring Demo](https://research.nvidia.com/labs/sil/projects/kimodo/docs/interactive_demo/index.html)
-- [Command-Line Interface](https://research.nvidia.com/labs/sil/projects/kimodo/docs/user_guide/cli.html)
-- [Benchmark Instructions](https://research.nvidia.com/labs/sil/projects/kimodo/docs/benchmark/introduction.html)
-- [API Reference](https://research.nvidia.com/labs/sil/projects/kimodo/docs/api_reference/index.html)
-
-**Before getting started** with motion generation, please review the [best practices](https://research.nvidia.com/labs/sil/projects/kimodo/docs/key_concepts/limitations.html) and be aware of [model limitations](https://research.nvidia.com/labs/sil/projects/kimodo/docs/key_concepts/limitations.html#limitations).
-
-
-Some notes on installation environment:
-- Kimodo requires ~17GB of VRAM to generate locally, primarily due to the text embedding model
-- The model has been most extensively tested on GeForce RTX 3090, GeForce RTX 4090, and NVIDIA A100 GPUs, but should work on other recent cards with sufficient VRAM
-- This repo was developed on Linux, though Windows should work especially if using Docker
-- For this `kimodo-mps` packaging, the denoiser/checkpoint path has also been
-  validated on Apple Silicon MPS. Full prompt generation still depends on the
-  LLM2Vec text encoder or cached embeddings; see
-  [MPS_PORT_NOTES.md](MPS_PORT_NOTES.md) before running on a Mac.
-
-## Interactive Motion Authoring Demo
-
-<div align="center">
-  <img src="assets/demo_screenshot.png" width="1000">
-</div>
-
-</br>
-
-**[Demo Documentation and Tutorial](https://research.nvidia.com/labs/sil/projects/kimodo/docs/interactive_demo/index.html)**
-
-The web-based interactive demo provides an intuitive interface for generating motions with any of the Kimodo model variations. After installation, the demo can be launched with the `kimodo_demo` command. It runs locally on http://127.0.0.1:7860. Open this URL in your browser to access the interface (or use port forwarding if set up on a server).
-
-### Demo Features
-- **Multiple Characters**: Supports generating with the SOMA, G1, and SMPL-X versions of Kimodo
-- **Text Prompts**: Enter one or more natural language descriptions of desired motions on the timeline
-- **Timeline Editor**: Add and edit keyframes and constrained intervals on multiple constraint tracks
-- **Constraint Types**:
-  - Full-Body: Complete joint position constraints at specific frames
-  - 2D Root: Define waypoints or full paths to follow on the ground plane
-  - End-Effectors: Control hands and feet positions/rotations
-- **Constraint Editing**: Editing mode allows for re-posing of constraints or adjusting waypoints
-- **3D Visualization**: Real-time rendering of generated motions with skeleton and skinned mesh options
-- **Playback Controls**: Preview generated motions with adjustable playback speed
-- **Multiple Samples**: Generate and compare multiple motion variations
-- **Examples**: Load pre-existing examples to better understand Kimodo's capabilities
-- **Export**: Save constraints and generated motions for later use
-
-## Command-Line Interface
-
-**[CLI Documentation and Examples](https://research.nvidia.com/labs/sil/projects/kimodo/docs/user_guide/cli.html)**
-
-Motions can also be generated directly from the command line with the `kimodo_gen` command or by running `python -m kimodo.scripts.generate` directly.
-
-**Key Arguments:**
-- `prompt`: A single text description or sequence of texts for the desired motion (required)
-- `--model`: Which Kimodo model to use for generation
-- `--duration`: Motion duration in seconds
-- `--num_samples`: Number of motion variations to generate
-- `--constraints`: Constraint file to control the generated motion (e.g., saved from the web demo)
-- `--diffusion_steps`: Number of denoising steps
-- `--cfg_type` / `--cfg_weight`: Classifier-free guidance (`nocfg`, `regular` with one weight, or `separated` with two weights for text vs. constraints); see the [CLI docs](https://research.nvidia.com/labs/sil/projects/kimodo/docs/user_guide/cli.html#classifier-free-guidance-cfg)
-- `--no-postprocess`: Flag to disable foot skate and constraint cleanup post-processing
-- `--seed`: Random seed for reproducible results
-
-The script supports different output formats depending on which skeleton is used. By default, a custom NPZ format is saved that is compatible with the web demo.
-For Kimodo-G1 models, the motion can be saved in the standard MuJoCo qpos CSV format.
-For Kimodo-SMPLX, motion can be saved in the standard AMASS npz format for compability with existing pipelines.
-
-### Default NPZ Output Format
-Generated motions are saved as NPZ files containing:
-- `posed_joints`: Global joint positions `[T, J, 3]`
-- `global_rot_mats`: Global joint rotation matrices `[T, J, 3, 3]`
-- `local_rot_mats`: Local (parent-relative) joint rotation matrices `[T, J, 3, 3]`
-- `foot_contacts`: Foot contact labels [left heel, left toe, right heel, right toes] `[T, 4]`
-- `smooth_root_pos`: Smoothed root representations outputted from the model `[T, 3]`
-- `root_positions`: The (non-smoothed) trajectory of the actual root joint (e.g., pelvis) `[T, 3]`
-- `global_root_heading`: The heading direction output from the model `[T, 2]`
-
-`T` the number of frames and `J` the number of joints.
-
-## Low-Level Python API
-
-**[Model API Documentation](https://research.nvidia.com/labs/sil/projects/kimodo/docs/api_reference/model.html#kimodo.model.kimodo_model.Kimodo.__call__)**
-
-For maximum flexibility, the low-level model inference API can be called directly, rather than going through our high-level CLI.
-This allows for advanced model configuration including classifier-free guidance weights and parameters related to transitions in multi-prompt sequences.
-
-## Downstream Robotics Applications of Kimodo
-
-### Visualizing G1 Motions with MuJoCo
-
-<div align="center">
-  <img src="assets/mujoco_result.gif" width="800">
-</div>
-
-After generating motions on the G1 robot skeleton and saving to the MuJoCo qpos CSV file format, they can be easily used and visualized within MuJoCo.
-A minimal visualization script is available with:
-```
-python -m kimodo.scripts.mujoco_load
-```
-Make sure to edit the script to correctly point to your CSV file and install Mujoco before running this.
-
-### Tracking Generated Motions with ProtoMotions
-
-<div align="center">
-  <img src="assets/protomotions_results.gif" width="1280">
-</div>
-
-[ProtoMotions](https://github.com/NVlabs/ProtoMotions) is a GPU-accelerated simulation and learning framework for training physically simulated digital humans and humanoid robots. The Kimodo NPZ and CSV output formats are both compatible with ProtoMotions making it easy to train physics-based policies with generated motions from Kimodo. ProtoMotions supports outputs on both the SOMA skeleton and Unitree G1
-
-After generating motions with Kimodo, head over to the [ProtoMotions docs](https://github.com/NVlabs/ProtoMotions?tab=readme-ov-file#-motion-authoring-with-kimodo) to see how to import them.
-
-### Retargeting Motions to Other Robots with GMR
-
-<div align="center">
-  <img src="assets/gmr_results.gif" width="1280">
-</div>
-
-Motions generated by Kimodo-SMPLX can be retargeted to other robots using [General Motion Retargeting (GMR)](https://github.com/YanjieZe/GMR).
-GMR supports the AMASS NPZ format out of the box, so simply generate motions with Kimodo and use `--output` to save; the AMASS NPZ is written to `stem_amass.npz` (single sample) or in the output folder (multiple samples). Then, use the [SMPL-X to Robot script](https://github.com/YanjieZe/GMR?tab=readme-ov-file#retargeting-from-smpl-x-amass-omomo-to-robot) in GMR to retarget to any supported robot. For example:
-```
-# run within GMR codebase
-python scripts/smplx_to_robot.py --smplx_file /path/to/saved/amass_format.npz --robot booster_t1
+```text
+TypeError: Cannot convert a MPS Tensor to float64 dtype as the MPS framework doesn't support float64.
 ```
 
-### Combining Kimodo with GEAR-SONIC
+The failure came from moving SOMA skeleton buffers to MPS for plain-text BVH
+serialization. BVH writing does not need GPU execution, so this package keeps
+that export path on CPU for MPS runs and casts motion tensors to float32. After
+that fix, the same prompt generated both:
 
-<div align="center">
-  <img src="assets/sonic_kimodo_demo.gif" width="800">
-</div>
+- `walk_forward_bvh.npz`
+- `walk_forward_bvh.bvh`
 
-As a proof of concept, we have also incorporated Kimodo into the [interactive GEAR-SONIC demo](https://nvlabs.github.io/GEAR-SONIC/demo.html). In the demo, Kimodo can be used to generate a kinematic motion on the G1 robot skeleton, then GEAR-SONIC tracks the motion in simulation.
+## Requirements
 
-## Kimodo Motion Generation Benchmark
+- Apple Silicon Mac.
+- Python 3.11+ recommended.
+- `uv` recommended.
+- PyTorch with MPS support.
+- Hugging Face token with access to:
+  - `meta-llama/Meta-Llama-3-8B-Instruct`
+  - `McGill-NLP/LLM2Vec-Meta-Llama-3-8B-Instruct-mntp`
+  - `McGill-NLP/LLM2Vec-Meta-Llama-3-8B-Instruct-mntp-supervised`
+  - `nvidia/Kimodo-SOMA-RP-v1.1` or whichever Kimodo checkpoint you use
 
-[**[Benchmark Documentation](https://research.nvidia.com/labs/sil/projects/kimodo/docs/benchmark/introduction.html)**]
-[**[Test Suite on Hugging Face](https://huggingface.co/datasets/nvidia/Kimodo-Motion-Gen-Benchmark)**]
+First-run local cache sizes observed during validation:
 
-Alongside the Kimodo models, we provide a benchmark designed to standardize evaluation for motion generation models with a comprehensive set of test cases. This includes:
+- Llama 3 8B text encoder: about 15 GB
+- LLM2Vec MNTP adapter/cache: about 169 MB
+- LLM2Vec supervised adapter/cache: about 160 MB
+- Kimodo-SOMA-RP-v1.1 checkpoint: about 1.1 GB
 
-* **Evaluation Data**: A suite of test cases [available on Hugging Face](https://huggingface.co/datasets/nvidia/Kimodo-Motion-Gen-Benchmark) is used in concert with the [BONES-SEED](https://huggingface.co/datasets/bones-studio/seed) dataset to construct the full benchmark. 
-* **Diverse Test Cases**: Test cases cover a wide range of text-conditioned and constraint-conditioned motion generation.
-* **Evaluation Pipeline**: Code for the full evaluation pipeline including benchmark construction, motion generation, and evaluation.
-* **Metrics**: Several metrics to evaluate generated motions that cover motion quality, constraint following, and text alignment. Our [TMR-SOMA-RP-v1](https://huggingface.co/nvidia/TMR-SOMA-RP-v1) model trained on all 700 hours of the Bones Rigplay dataset is a powerful embedding model to compute common metrics like R-precision and FID.
+The 8B text encoder is the main memory and disk risk on 24 GB unified-memory
+Macs. Start with the smoke test before trying longer clips.
 
-To facilitate future research, we [report benchmark results](https://research.nvidia.com/labs/sil/projects/kimodo/docs/benchmark/results.html) for Kimodo-SOMA-v1.1 models, which are reproducible and easily comparable to other methods trained on the BONES-SEED data. 
+## Setup
 
-## Timeline Annotations for BONES-SEED
+```bash
+git clone git@github.com:t7r0n/kimodo-mps.git
+cd kimodo-mps
 
-As detailed in the [tech report](https://research.nvidia.com/labs/sil/projects/kimodo/assets/kimodo_tech_report.pdf), Kimodo is trained using fine-grained temporal text annotations of mocap clips.
-While the full [Rigplay 1](https://bones.studio/datasets#rp01) dataset is proprietary, we have released the temporal segmentations for the public [BONES-SEED](https://huggingface.co/datasets/bones-studio/seed) subset.
-These annotations are already included in the BONES-SEED dataset, but the standalone labels and additional information about them is [available on HuggingFace](https://huggingface.co/datasets/nvidia/SEED-Timeline-Annotations).
-
-
-## Related Humanoid Work at NVIDIA
-Kimodo is part of a larger effort to enable humanoid motion data for robotics, physical AI, and other applications.
-
-Check out these related works:
-* [SOMA Body Model](https://github.com/NVlabs/SOMA-X) - a unified parameteric human body model
-* [BONES-SEED Dataset](https://huggingface.co/datasets/bones-studio/seed) - a large scale human(oid) motion capture dataset in SOMA and G1 format
-* [ProtoMotions](https://github.com/NVlabs/ProtoMotions) - simulation and learning framework for training physically simulated human(oid)s
-* [SOMA Retargeter](https://github.com/NVIDIA/soma-retargeter) - SOMA to G1 retargeting tool
-* [GEM](https://github.com/NVlabs/GEM-X) - human motion reconstruction from video
-* [GEAR SONIC](https://github.com/NVlabs/GR00T-WholeBodyControl) - humanoid behavior foundation model for physical robots
-
-## Citation
-
-If you use this code in your research, please cite:
-
-```bibtex
-@article{Kimodo2026,
-  title={Kimodo: Scaling Controllable Human Motion Generation},
-  author={Rempe, Davis and Petrovich, Mathis and Yuan, Ye and Zhang, Haotian and Peng, Xue Bin and Jiang, Yifeng and Wang, Tingwu and Iqbal, Umar and Minor, David and de Ruyter, Michael and Li, Jiefeng and Tessler, Chen and Lim, Edy and Jeong, Eugene and Wu, Sam and Hassani, Ehsan and Huang, Michael and Yu, Jin-Bey and Chung, Chaeyeon and Song, Lina and Dionne, Olivier and Kautz, Jan and Yuen, Simon and Fidler, Sanja},
-  journal={arXiv:2603.15546},
-  year={2026}
-}
+uv venv --python 3.11 .venv
+source .venv/bin/activate
+uv pip install -e .
 ```
 
-## License
+Authenticate with Hugging Face:
 
-This codebase is licensed under [Apache-2.0](LICENSE). Note that model checkpoints and data are licensed separately as indicated on the HuggingFace download pages.
+```bash
+hf auth login
+```
 
-This project will download and install additional third-party open source software projects. Review the license terms of these open source projects before use.
+Or create a local `.env` file. The smoke script accepts common key formats:
 
-## Acknowledgments
+```bash
+HF_TOKEN=hf_xxx
+```
 
-This project builds upon excellent open-source projects:
-- [Viser](https://github.com/nerfstudio-project/viser) for 3D motion authoring demo
-- [LLM2Vec](https://github.com/McGill-NLP/llm2vec) for text encoding
+## Run the MPS Smoke Test
 
-## Contact
+```bash
+scripts/mps_e2e_smoke.sh
+```
 
-For questions or issues, please open an issue on this repository or reach out directly to the authors.
+The script runs:
 
----
+```bash
+TEXT_ENCODER_MODE=local \
+PYTORCH_ENABLE_MPS_FALLBACK=1 \
+python -m kimodo.scripts.generate \
+  "A person walks forward." \
+  --model kimodo-soma-rp \
+  --duration 0.25 \
+  --num_samples 1 \
+  --diffusion_steps 1 \
+  --no-postprocess \
+  --seed 123 \
+  --bvh \
+  --output outputs/mps_e2e_smoke/walk_forward
+```
+
+Expected outputs:
+
+```text
+outputs/mps_e2e_smoke/walk_forward.npz
+outputs/mps_e2e_smoke/walk_forward.bvh
+```
+
+The first run can take a long time because the Llama-3 8B text encoder and
+Kimodo checkpoint may need to download and load.
+
+## Normal CLI Usage
+
+After the smoke test works, increase duration and diffusion steps gradually:
+
+```bash
+TEXT_ENCODER_MODE=local \
+PYTORCH_ENABLE_MPS_FALLBACK=1 \
+python -m kimodo.scripts.generate \
+  "A person walks slowly across the room." \
+  --model kimodo-soma-rp \
+  --duration 2.0 \
+  --num_samples 1 \
+  --diffusion_steps 25 \
+  --seed 123 \
+  --bvh \
+  --output outputs/walk_slow
+```
+
+For production-quality motion, raise settings carefully and watch memory
+pressure. Longer clips, multiple samples, more denoising steps, and
+postprocessing can still exceed practical Mac limits.
+
+## Known Limits
+
+- The full CLI prompt-to-motion path is validated only as a tiny smoke test.
+- The interactive Gradio demo was not separately validated on MPS.
+- The bundled MotionCorrection extension is CMake/C++ based, but it was not
+  built or validated in this Mac packaging pass.
+- The upstream model still relies on a large LLM2Vec/Llama-3 text encoder.
+- Cached embedding or no-network workflows would make Mac testing easier, but
+  they are not implemented here yet.
+
+## Licenses and Attribution
+
+This package keeps upstream Kimodo licensing and attributions:
+
+- [LICENSE](LICENSE)
+- [ATTRIBUTIONS.MD](ATTRIBUTIONS.MD)
+- [UPSTREAM_README.md](UPSTREAM_README.md)
+
+Model checkpoints and gated text encoder weights are governed by their upstream
+Hugging Face/NVIDIA/Meta model licenses and are not redistributed here.
